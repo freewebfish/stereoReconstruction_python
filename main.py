@@ -1,5 +1,5 @@
 import numpy as np
-import cv2
+from cv2 import cv2
 import time
 
 SHOW_STEREOMATCHING_DISPARITY_IMG           = True
@@ -58,7 +58,7 @@ def ShowDisparityImageSGBM(disparityImg):
     disImg = (disImg - STEREOMATCHING_SGBM_MIN_DISPARITY) / STEREOMATCHING_SGBM_N_DISPARITIES
     cv2.imshow('Disparity image SGBM', disImg)
     cv2.waitKey(0)
-    return;
+    return
 
 
 # ************************************************************************************************
@@ -67,7 +67,7 @@ def ShowDisparityImageSGBM(disparityImg):
 
 def ResizeImage(img, scale):
     imgResized = cv2.resize(src=img, dsize=(0,0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
-    return imgResized;
+    return imgResized
 
 
 def RotateImage(srcImg, angleToRotate):
@@ -75,7 +75,7 @@ def RotateImage(srcImg, angleToRotate):
     maxLen = max(height, width)
     rotationMat = cv2.getRotationMatrix2D(center=(maxLen/2,maxLen/2), angle=angleToRotate, scale=1.0)
     desImg = cv2.warpAffine(src=srcImg, M=rotationMat, dsize=(maxLen, maxLen))
-    return desImg;
+    return desImg
 
 
 def RotateLeftAndRightImagesAccordingToOurSystem(leftImg, rightImg):
@@ -86,13 +86,13 @@ def RotateLeftAndRightImagesAccordingToOurSystem(leftImg, rightImg):
     leftImgRotated = leftImg90[0:width, 0:height]              # 3. crop left img
     rightImgRotated = rightImg270[0:width, width-height:width] # 4. crop right img
                                     # ref (extract ROI): http://docs.opencv.org/3.2.0/d3/df2/tutorial_py_basic_ops.html
-    return leftImgRotated, rightImgRotated;
+    return leftImgRotated, rightImgRotated
 
 
 def ConvertLeftAndRightImagesToGray(leftImg, rightImg):
     leftImgGray = cv2.cvtColor(src=leftImg, code=cv2.COLOR_RGB2GRAY)
     rightImgGray = cv2.cvtColor(src=rightImg, code=cv2.COLOR_RGB2GRAY)
-    return leftImgGray, rightImgGray;
+    return leftImgGray, rightImgGray
 
 
 # ************************************************************************************************
@@ -100,13 +100,13 @@ def ConvertLeftAndRightImagesToGray(leftImg, rightImg):
 # ************************************************************************************************
 
 def LoadCalibResult(calibFilename):
-    fs = cv2.FileStorage(source=calibFilename, flags=cv2.FILE_STORAGE_READ)
+    fs = cv2.FileStorage(filename=calibFilename, flags=cv2.FILE_STORAGE_READ)
     intrinsic  = fs.getNode('intrinsic').mat() # ref: https://github.com/opencv/opencv_contrib/issues/834
     distortion = fs.getNode('distortion').mat()
     rotation   = fs.getNode('rotation').mat()
     projection = fs.getNode('projection').mat()
     Q          = fs.getNode('Q').mat()
-    return intrinsic, distortion, rotation, projection, Q;
+    return intrinsic, distortion, rotation, projection, Q
 
 
 def RectifyLeftAndRightImagesUsingCalibMatrices(leftImg, rightImg, \
@@ -124,7 +124,7 @@ def RectifyLeftAndRightImagesUsingCalibMatrices(leftImg, rightImg, \
     # rectify 2 images using maps
     leftImgRectified = cv2.remap(src=leftImg, map1=leftMapX, map2=leftMapY, interpolation=cv2.INTER_LINEAR)
     rightImgRectified = cv2.remap(src=rightImg, map1=rightMapX, map2=rightMapY, interpolation=cv2.INTER_LINEAR)
-    return leftImgRectified, rightImgRectified;
+    return leftImgRectified, rightImgRectified
 
 
 def StereoMatching(leftImg, rightImg):
@@ -140,7 +140,7 @@ def StereoMatching(leftImg, rightImg):
                                    speckleRange     = STEREOMATCHING_SGBM_SPECKLE_RANGE, \
                                    mode             = STEREOMATCHING_SGBM_MODE)
     disparityImg = stereo.compute(leftImg, rightImg)#.astype(np.float32) / 16.0  # is 16-bit signed single-channel
-    return disparityImg;
+    return disparityImg
 
 
 def StereoMatchingWithCalibFiles(leftImg, rightImg, leftCalibFilename, rightCalibFilename):
@@ -157,7 +157,7 @@ def StereoMatchingWithCalibFiles(leftImg, rightImg, leftCalibFilename, rightCali
 
     # stereo matching
     disparityImg = StereoMatching(leftImgRectifiedGray, rightImgRectifiedGray)
-    return disparityImg, leftImgRectified, leftQ;
+    return disparityImg, leftImgRectified, leftQ
 
 
 def CheckPlyFileExportCondition(disparityX, disparityY, disparityZ, pixelB, pixelG, pixelR):
@@ -171,7 +171,7 @@ def CheckPlyFileExportCondition(disparityX, disparityY, disparityZ, pixelB, pixe
     condColorG = (STEREOMATCHING_PLY_FILTER_BLACK_COLOR_THR < pixelG)
     condColorR = (STEREOMATCHING_PLY_FILTER_BLACK_COLOR_THR < pixelR)
 
-    return (condPosX and condPosY and condPosZ and condColorB and condColorG and condColorR);
+    return (condPosX and condPosY and condPosZ and condColorB and condColorG and condColorR)
 
 
 def SaveWorldImageToPLY(worldImg, leftImg, plyFilename):
@@ -216,13 +216,13 @@ def SaveWorldImageToPLY(worldImg, leftImg, plyFilename):
                 if CheckPlyFileExportCondition(disparityX, disparityY, disparityZ, pixelB, pixelG, pixelR):
                     f.write(format(disparityX,'.4f') + ' ' + format(disparityY,'.4f') + ' ' + format(disparityZ,'.4f') \
                             + ' ' + str(pixelR) + ' ' + str(pixelG) + ' ' + str(pixelB) + '\n')
-    return;
+    return
 
 
 def SaveDisparityImageToPLY(disparityImg, leftImg, perspectiveMatrix, plyFilename):
     worldImg = cv2.reprojectImageTo3D(disparity=disparityImg, Q=perspectiveMatrix, handleMissingValues=True)
     SaveWorldImageToPLY(worldImg, leftImg, plyFilename)
-    return;
+    return
 
 
 
